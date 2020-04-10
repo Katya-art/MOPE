@@ -245,20 +245,7 @@ while not flag:
 
     beta = [(sum([x_for_beta[j][i] * Y_average[j] for j in range(N)]) / N) for i in range(4)]
     ts = [(math.fabs(beta[i]) / S_beta_s) for i in range(4)]
-    tabl_Stud = [
-        12.71,
-        4.303,
-        3.182,
-        2.776,
-        2.571,
-        2.447,
-        2.365,
-        2.306,
-        2.262,
-        2.228,
-        2.201,
-        2.179
-    ]
+    
     f3 = f1 * f2
 
     student = partial(t.ppf, q=1 - 0.025)
