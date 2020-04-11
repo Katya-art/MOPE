@@ -219,13 +219,8 @@ while not flag:
     p = .95
     q = 1 - p
 
-    def kohren(f1=f1, f2=f2, q=0.05):
-        q1 = q / f1
-        fisher_value = f.ppf(q=1 - q1, dfn=f2, dfd=(f1 - 1) * f2)
-        return fisher_value / (fisher_value + f1 - 1)
-
-
-    Gt = kohren()
+    temp_cohren = f.ppf(q=(1 - q / f1), dfn=f2, dfd=(f1 - 1) * f2)
+    Gt = temp_cohren / (temp_cohren + f1 - 1)
 
     if Gp < Gt:
         print('Дисперсії однорідні')
@@ -268,8 +263,7 @@ while not flag:
 
     Fp = deviation_of_adequacy / S2_beta_s
 
-    fisher = partial(f.ppf, q=1 - 0.05)
-    Ft = fisher(dfn=f4, dfd=f3)
+    Ft = f.ppf(dfn=f4, dfd=f3, q=1 - 0.05)
 
     print("Значення після критерія Стюдента:")
     print("Y1 = {0:.3f};   Y2 = {1:.3f};   Y3 = {2:.3f};   Y4 = {3:.3f}.".format(result_2[0],
