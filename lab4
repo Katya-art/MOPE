@@ -6,8 +6,26 @@ import numpy as np
 from scipy.stats import f, t
 from prettytable import PrettyTable
 
+def get_fisher_critical(prob,f3, f4):
+    for i in [j*0.001 for j in range(int(10/0.001))]:
+        if abs(f.cdf(i,f4,f3)-prob) < 0.0001:
+            return i
+
+
+def get_student_critical(prob, f3):
+    for i in [j*0.0001 for j in range(int(5/0.0001))]:
+        if abs(t.cdf(i,f3)-(0.5 + prob/0.1*0.05)) < 0.000005:
+            return i
+
+def get_cohren_critical(prob, f1, f2):
+    f_crit = f.isf((1-prob)/f2, f1, (f2-1)*f1)
+    return f_crit/(f_crit+f2-1)
+
 m = 3
 N = 8
+
+p = .95
+q = 1 - p
 
 x1max = 60
 x1min = 10
@@ -21,9 +39,11 @@ X_min = [x1min, x2min, x3min]
 
 x_av_min = (x1min + x2min + x3min) / 3
 x_av_max = (x1max + x2max + x3max) / 3
+
 Y_max = int(round(200 + x_av_max, 0))
 Y_min = int(round(200 + x_av_min, 0))
 X0 = 1
+
 
 X_matr = [
     [-1, -1, -1],
@@ -33,8 +53,9 @@ X_matr = [
     [1, -1, -1],
     [1, -1, 1],
     [1, 1, -1],
-    [1, 1, 1]
-]
+    [1, 1, 1]]
+
+
 x_for_beta = [
     [1, -1, -1, -1],
     [1, -1, -1, 1],
@@ -79,8 +100,12 @@ x_12_13_23_natur = [[X_matr_natur[j][0] * X_matr_natur[j][1], X_matr_natur[j][0]
                      X_matr_natur[j][1] * X_matr_natur[j][2]] for j in range(N)]
 x_123_natur = [X_matr_natur[j][0] * X_matr_natur[j][1] * X_matr_natur[j][2] for j in range(N)]
 
-flag = False
-while not flag:
+
+
+flag = True
+ct = 3 #кількість ітерацій
+while (flag):
+    flag = False
     Y_matr = [[random.randint((Y_min), (Y_max)) for i in range(m)] for j in range(N)]
 
     Y_average = [sum(j) / m for j in Y_matr]
@@ -216,11 +241,9 @@ while not flag:
 
     f1 = m - 1
     f2 = N
-    p = .95
-    q = 1 - p
 
-    temp_cohren = f.ppf(q=(1 - q / f1), dfn=f2, dfd=(f1 - 1) * f2)
-    Gt = temp_cohren / (temp_cohren + f1 - 1)
+
+    Gt = get_cohren_critical(p, f1, f2)
 
     if Gp < Gt:
         print('Дисперсії однорідні')
@@ -229,6 +252,7 @@ while not flag:
     else:
         print('Дисперсії неоднорідні')
         m += 1
+
     S_average = sum(S_kv) / N
 
     S2_beta_s = S_average / (N * m)
@@ -237,11 +261,10 @@ while not flag:
 
     beta = [(sum([x_for_beta[j][i] * Y_average[j] for j in range(N)]) / N) for i in range(4)]
     ts = [(math.fabs(beta[i]) / S_beta_s) for i in range(4)]
-    
+
     f3 = f1 * f2
 
-    student = partial(t.ppf, q=1 - 0.025)
-    criterion_of_St = student(df=f3)
+    criterion_of_St = get_student_critical(p, f3)
 
     result_2 = [criterion_of_Student(B_nat[0], criterion_of_St, ts[0]) +
                 criterion_of_Student(B_nat[1], criterion_of_St, ts[1]) * X_matr_natur[i][0] +
@@ -263,7 +286,8 @@ while not flag:
 
     Fp = deviation_of_adequacy / S2_beta_s
 
-    Ft = f.ppf(dfn=f4, dfd=f3, q=1 - 0.05)
+    Ft = get_fisher_critical(p, f3, f4)
+    """+"""
 
     print("Значення після критерія Стюдента:")
     print("Y1 = {0:.3f};   Y2 = {1:.3f};   Y3 = {2:.3f};   Y4 = {3:.3f}.".format(result_2[0],
@@ -275,10 +299,15 @@ while not flag:
                                                                                      Y_average[2],
                                                                                      Y_average[3]))
 
+    print(Ft)
     if Fp > Ft:
         print('Fp = {} > Ft = {}'.format(round(Fp, 3), Ft))
         print('Рівняння регресії неадекватно оригіналу при рівні значимості {}'.format(round(q, 2)))
+        m += 1
+        flag = ct != 0
+        ct -= 1
+
     else:
         print('Fp = {} < Ft = {}'.format(round(Fp, 3), Ft))
         print('Рівняння регресії адекватно оригіналу при рівні значимості {}'.format(round(q, 2)))
-        flag = True
+        flag = False
